@@ -53,6 +53,7 @@ critics = {
 }
 
 from math import sqrt
+import numpy as np
 
 # ユークリッド距離
 def sim_distance(prefs,person1,person2):
@@ -95,19 +96,72 @@ def sim_pearson(prefs,p1,p2):
 
     r=num/den
 
-    return r
+    return np.abs(r)
+
+# person以外の全ユーザの評点の重み付き平均を使い、personへの推薦を算出する.
+def getRecommendations(prefs, person, similarity=sim_pearson):
+    totals={}
+    simSums={}
+    for other in prefs:
+
+        # 自分とは比較しない.
+        if other == person:
+            continue
+        sim = similarity(prefs, person, other)
+
+        # 0以下のスコアをスキップ
+        if sim <= 0:
+            continue
+
+        for item in prefs[other]:
+
+            # まだ見てない映画の得点のみを算出
+            if item not in prefs[person] or prefs[person][item] == 0:
+
+                # 類似度 * score
+                totals.setdefault(item, 0)
+                totals[item] += prefs[other][item] * sim
+
+                # 類似度を合計
+                simSums.setdefault(item, 0)
+                simSums[item] += sim
+
+        # 正規化したリストを作る
+        rankings = [(total/simSums[item], item) for item, total in totals.items()]
+
+        # ソート済みのリストを返す
+        rankings.sort()
+        rankings.reverse()
+        return rankings if rankings.__len__() > 0 else '空'
+
+# 指定のログを出力する形式
+# @name 対象物
+# @arithmetic 算術式
+def println (name, arithmetic):
+    print('{0:20} ==> {1}'.format(name, arithmetic))
+
 
 print('---------------')
 print('ユークリッド距離 |')
 print('---------------')
 print('Lisa Rose : ')
-print('{0:20} ==> {1}'.format('--- Gene Seymour', sim_distance(critics, 'Lisa Rose', 'Gene Seymour')))
-print('{0:20} ==> {1}'.format('--- Toby', sim_distance(critics, 'Lisa Rose', 'Toby')))
-print('{0:20} ==> {1}'.format('--- Jack Matthews', sim_distance(critics, 'Lisa Rose', 'Jack Matthews')))
-print('{0:20} ==> {1}'.format('--- Michael Phillips', sim_distance(critics, 'Lisa Rose', 'Michael Phillips')))
-print('{0:20} ==> {1}'.format('--- Mick LaSalle', sim_distance(critics, 'Lisa Rose', 'Mick LaSalle')))
-print('{0:20} ==> {1}'.format('--- Claudia Puig', sim_distance(critics, 'Lisa Rose', 'Claudia Puig')))
+println('--- Gene Seymour', sim_distance(critics, 'Lisa Rose', 'Gene Seymour'))
+println('--- Toby', sim_distance(critics, 'Lisa Rose', 'Toby'))
+println('--- Jack Matthews', sim_distance(critics, 'Lisa Rose', 'Jack Matthews'))
+println('--- Michael Phillips', sim_distance(critics, 'Lisa Rose', 'Michael Phillips'))
+println('--- Mick LaSalle', sim_distance(critics, 'Lisa Rose', 'Mick LaSalle'))
+println('--- Claudia Puig', sim_distance(critics, 'Lisa Rose', 'Claudia Puig'))
 print('------------')
 print('ピアソン相関 |')
 print('------------')
-print(sim_pearson(critics, 'Lisa Rose', 'Gene Seymour'))
+println('Gene Seymour', sim_pearson(critics, 'Lisa Rose', 'Gene Seymour'))
+print('------------')
+print('推薦        |')
+print('------------')
+println('Toby', getRecommendations(critics, 'Toby'))
+println('Gene Seymour', getRecommendations(critics, 'Gene Seymour'))
+println('Jack Matthews', getRecommendations(critics, 'Jack Matthews'))
+println('Michael Phillips', getRecommendations(critics, 'Michael Phillips'))
+println('Mick LaSalle', getRecommendations(critics, 'Mick LaSalle'))
+println('Claudia Puig', getRecommendations(critics, 'Claudia Puig'))
+println('Lisa Rose', getRecommendations(critics, 'Lisa Rose'))
