@@ -132,7 +132,26 @@ def getRecommendations(prefs, person, similarity=sim_pearson):
         # ソート済みのリストを返す
         rankings.sort()
         rankings.reverse()
-        return rankings if rankings.__len__() > 0 else '空'
+        return rankings if len(rankings) > 0 else '空'
+
+# prefs -> personにもっともマッチするものを返す
+# 結果数と類似性関数はオプションのパラメータ
+def topMatches(prefs, person, n=5, similarity=sim_pearson):
+    scores = [(similarity(prefs, person, other), other) for other in prefs if other != person]
+    scores.sort()
+    scores.reverse()
+    return scores[0:n]
+
+def transformPrefs(prefs):
+    result ={}
+    for person in prefs:
+        for item in prefs[person]:
+            result.setdefault(item,{})
+
+            # item と person を入れ替える
+            result[item][person] = prefs[person][item]
+        return result
+
 
 # 指定のログを出力する形式
 # @name 対象物
@@ -148,6 +167,8 @@ def doSim_distance(target, compared):
 def doGetRecommendations(name):
     println(name, getRecommendations(critics, name))
 
+
+# #########    実行部分   ######### #
 print('---------------')
 print('ユークリッド距離 |')
 print('---------------')
@@ -172,3 +193,8 @@ doGetRecommendations('Michael Phillips')
 doGetRecommendations('Mick LaSalle')
 doGetRecommendations('Claudia Puig')
 doGetRecommendations('Lisa Rose')
+print('----------')
+print('似ているもの|')
+print('----------')
+movies = transformPrefs(critics)
+print(topMatches(movies, 'Superman Returns'))
